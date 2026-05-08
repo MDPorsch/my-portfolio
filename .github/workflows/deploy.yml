@@ -7,24 +7,42 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  NODE_VERSION: '20'
+
 jobs:
   build-and-test:
+    name: Build & Deploy
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=high || true
+
       - name: Build project
         run: npm run build
 
-      - name: Confirm build success
-        run: echo "Build complete. AWS Amplify handles deployment."
+      - name: Verify build output exists
+        run: |
+          if [ -d "build" ]; then
+            echo "Build directory exists"
+            ls -la build/
+          else
+            echo "Build directory not found"
+            exit 1
+          fi
+
+      - name: Confirm deployment ready
+        run: echo "Build complete. AWS Amplify will now deploy to production."
